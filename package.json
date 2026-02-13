@@ -1,0 +1,28 @@
+{
+  "name": "claw2human",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Bridge system for Agent-to-Human communication",
+  "scripts": {
+    "build": "turbo run build",
+    "dev": "turbo run dev",
+    "lint": "turbo run lint",
+    "test": "turbo run test",
+    "db:generate": "cd apps/backend && bun run db:generate",
+    "db:migrate": "cd apps/backend && bun run db:migrate",
+    "db:studio": "cd apps/backend && bun run db:studio",
+    "clean": "turbo run clean && rm -rf node_modules"
+  },
+  "devDependencies": {
+    "turbo": "^2.3.0",
+    "typescript": "^5.7.0"
+  },
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "packageManager": "npm@10.9.0",
+  "engines": {
+    "node": ">=20"
+  }
+}

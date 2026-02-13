@@ -312,7 +312,189 @@ Edge Functions are **stateless HTTP handlers**. For reliable webhook delivery wi
 
 ---
 
-## 2. Alternatives Comparison
+## 2. Frontend Framework Deep Dive
+
+### Current State of Next.js (CRITICAL FINDING)
+
+**You were RIGHT:** Next.js 16 exists and is the current stable version!
+
+#### Version Status (February 2026)
+
+| Version | Status | Release Date |
+|---------|--------|--------------|
+| **16.1** | ✅ **LATEST STABLE** | January 2026 |
+| 16.0 | ✅ Stable | October 2025 |
+| 16.2 | 🧪 Canary (in development) | Current |
+| 15.5 | ✅ Stable (legacy) | August 2025 |
+
+#### Next.js 16 Major Features
+
+**1. Turbopack (STABLE - Default Bundler)**
+- 2-5× faster production builds
+- Up to 10× faster Fast Refresh
+- Now default for all new projects
+- 50%+ of dev sessions already using it
+
+**2. Cache Components (New Caching Model)**
+```typescript
+// New "use cache" directive
+'use cache'
+
+export async function getData() {
+  // This function is automatically cached
+  return fetch('/api/data')
+}
+```
+- Opt-in caching (no more implicit caching surprises)
+- Completes Partial Pre-Rendering (PPR) story
+- Replaces `experimental.ppr` flag
+
+**3. proxy.ts Replaces middleware.ts**
+```typescript
+// OLD (deprecated)
+// middleware.ts - Edge runtime only
+export function middleware(request: NextRequest) {
+  return NextResponse.redirect(new URL('/home', request.url))
+}
+
+// NEW (Next.js 16)
+// proxy.ts - Node.js runtime
+export function proxy(request: NextRequest) {
+  return NextResponse.redirect(new URL('/home', request.url))
+}
+```
+- `middleware.ts` deprecated, will be removed
+- `proxy.ts` runs on Node.js runtime (not Edge)
+- Clearer naming for network boundary
+
+**4. React 19.2 + Canary Features**
+- View Transitions API
+- useEffectEvent()
+- Activity component (background state preservation)
+- React Compiler support (stable)
+
+**5. Breaking Changes (Important for C2H)**
+
+| Feature | Old | New | Impact |
+|---------|-----|-----|--------|
+| **Params access** | `params.id` | `await params.id` | All dynamic routes need async |
+| **Cookies/Headers** | `cookies()` | `await cookies()` | Server components need async |
+| **Middleware** | `middleware.ts` | `proxy.ts` | File rename required |
+| **Linting** | `next lint` | ESLint/Biome direct | New projects use Biome option |
+| **AMP** | Supported | Removed | Not relevant for C2H |
+| **Image quality** | Any value | Only 75 default | Configure if using other qualities |
+
+**6. Turbopack File System Caching**
+- Persistent cache between dev sessions
+- Faster cold starts for large projects
+- Stable in 16.1
+
+**7. Next.js DevTools MCP**
+- Model Context Protocol integration
+- AI-assisted debugging
+- Context-aware error diagnostics
+
+#### Next.js 15 vs 16 Comparison
+
+| Feature | Next.js 15 | Next.js 16 | Recommendation |
+|---------|------------|------------|----------------|
+| **Bundler** | Webpack default | Turbopack default | 16 wins (faster) |
+| **Caching** | Implicit | Explicit opt-in | 16 wins (less confusing) |
+| **Middleware** | `middleware.ts` | `proxy.ts` | 16 clearer |
+| **Params** | Synchronous | Asynchronous | 16 breaking change |
+| **Node.js** | 18+ required | 20.9+ required | 16 needs newer Node |
+| **TypeScript** | 4.5+ | 5.1+ | 16 needs TS 5+ |
+| **Learning curve** | Familiar | Some breaking changes | 15 more stable for now |
+
+#### Should C2H Use Next.js 16?
+
+**RECOMMENDATION: YES, use Next.js 16.1**
+
+**Pros:**
+- ✅ Turbopack is genuinely faster (5-10x dev speed)
+- ✅ Explicit caching is better architecture
+- ✅ Latest React features (View Transitions, etc.)
+- ✅ proxy.ts is clearer than middleware.ts
+- ✅ File system caching for faster restarts
+
+**Cons:**
+- ⚠️ Breaking changes require migration attention
+- ⚠️ `await params` is annoying but manageable
+- ⚠️ Some third-party libraries may lag in support
+- ⚠️ Newer = potential undiscovered bugs
+
+**Migration effort for C2H:**
+- Minimal since we're starting fresh
+- Just need to remember `await params`
+- Use `proxy.ts` instead of `middleware.ts`
+
+**Package.json for C2H:**
+```json
+{
+  "dependencies": {
+    "next": "^16.1.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
+  },
+  "engines": {
+    "node": ">=20.9.0"
+  }
+}
+```
+
+### Frontend Alternatives
+
+#### Option A: Next.js 16 (Recommended)
+**Best for:** Full-stack apps, SEO needs, production workloads
+
+**Pros:**
+- Full React 19 support
+- Turbopack performance
+- App Router mature
+- Largest ecosystem
+
+**Cons:**
+- Breaking changes in v16
+- Can be overkill for simple apps
+
+#### Option B: React SPA + Vite
+**Best for:** Dashboards, internal tools, no SEO needs
+
+**Pros:**
+- Lightning fast HMR
+- Simple mental model
+- Smaller bundle
+- No SSR complexity
+
+**Cons:**
+- No SSR (SEO issues)
+- Separate API project needed
+- No file-based routing
+
+#### Option C: Nuxt 3 (Vue)
+**Best for:** Vue-preferring teams
+
+**Pros:**
+- Excellent DX
+- Auto-imports
+- Fast performance
+
+**Cons:**
+- Smaller ecosystem than React
+- Team needs Vue knowledge
+
+### Recommendation for C2H
+
+**Use Next.js 16.1** because:
+1. We need SSR for review links (SEO-friendly)
+2. Mobile performance matters (Turbopack helps)
+3. Starting fresh = no migration pain
+4. Latest features future-proof the app
+5. File-system caching helps during development
+
+---
+
+## 3. Alternatives Comparison
 
 ### Firebase (Google)
 
@@ -459,7 +641,7 @@ Edge Functions are **stateless HTTP handlers**. For reliable webhook delivery wi
 
 ---
 
-## 3. Traditional Stack Analysis
+## 4. Traditional Stack Analysis
 
 ### Original Proposal: Neon + Clerk + Hono + MinIO
 
@@ -495,7 +677,7 @@ Edge Functions are **stateless HTTP handlers**. For reliable webhook delivery wi
 
 ---
 
-## 4. Specific Concerns for Claw2Human
+## 5. Specific Concerns for Claw2Human
 
 ### Template Storage: JSONB vs Separate Documents
 
@@ -625,7 +807,7 @@ supabase
 
 ---
 
-## 5. Architecture Patterns Analysis
+## 6. Architecture Patterns Analysis
 
 ### Pattern A: Monolith (Recommended for MVP)
 
@@ -741,7 +923,7 @@ const object = await trpc.object.get.query({ id: "obj_1" });
 
 ---
 
-## 6. Comparison Matrix
+## 7. Comparison Matrix
 
 | Criteria | Supabase | Traditional | Appwrite | Directus |
 |----------|----------|-------------|----------|----------|
@@ -761,7 +943,7 @@ const object = await trpc.object.get.query({ id: "obj_1" });
 
 ---
 
-## 7. Recommendations
+## 8. Recommendations
 
 ### Recommendation A: Supabase (All-in-One) - FASTEST MVP
 
@@ -836,9 +1018,14 @@ const object = await trpc.object.get.query({ id: "obj_1" });
 
 ---
 
-## 8. Open Questions for El Jovenzuelo
+## 9. Open Questions for El Jovenzuelo
 
 ### Critical Decisions Needed:
+
+**0. Next.js Version (NEW)**
+- [ ] **Next.js 16.1** - Latest stable with Turbopack (RECOMMENDED)
+- [ ] **Next.js 15.5** - Stable, less breaking changes
+- [ ] **Wait** - Let others find the bugs first
 
 **1. Stack Preference?**
 - [ ] **A. Supabase** - Fastest MVP, all-in-one
@@ -877,28 +1064,29 @@ const object = await trpc.object.get.query({ id: "obj_1" });
 
 ---
 
-## 9. Next Steps
+## 10. Next Steps
 
 **Once you decide:**
 
-**If Supabase chosen:**
+**If Supabase + Next.js 16 chosen:**
 1. Create Supabase project
 2. Set up schema (templates, objects, folders, actions)
 3. Implement Edge Functions for webhooks
-4. Build Next.js frontend with Supabase client
+4. Build Next.js 16 frontend with Supabase client
+5. Remember: use `await params` and `proxy.ts` not `middleware.ts`
 
 **If Traditional chosen:**
 1. Set up Neon database
 2. Configure Clerk authentication
 3. Build Hono API server
 4. Set up Upstash Redis for queues
-5. Build Next.js frontend
+5. Build Next.js 16 frontend
 
 **If Hybrid chosen:**
 1. Set up Supabase project (DB + Auth + Realtime)
 2. Build Hono API server for webhooks
 3. Connect everything
-4. Build Next.js frontend
+4. Build Next.js 16 frontend
 
 ---
 
